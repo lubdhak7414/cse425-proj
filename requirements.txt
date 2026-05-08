@@ -1,5 +1,7 @@
 pretty_midi
 pypianoroll
+miditok
+psutil
 numpy
 pandas
 matplotlib
