@@ -1,0 +1,10 @@
+pretty_midi
+pypianoroll
+numpy
+pandas
+matplotlib
+torch
+torchvision
+torchaudio
+tqdm
+jupyter
