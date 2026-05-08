@@ -28,7 +28,8 @@ def generate_sequence(model, genre_id, max_len, temperature, top_k, device, bos_
     tokens = [bos_token] if bos_token is not None else [np.random.randint(0, vocab_size)]
     model.eval()
     for _ in range(max_len - 1):
-        x = torch.tensor(tokens, dtype=torch.long, device=device).unsqueeze(0)
+        context = tokens[-1024:]
+        x = torch.tensor(context, dtype=torch.long, device=device).unsqueeze(0)
         genre = torch.tensor([genre_id], dtype=torch.long, device=device)
         with torch.no_grad():
             logits = model(x, genre)[:, -1, :].squeeze(0)

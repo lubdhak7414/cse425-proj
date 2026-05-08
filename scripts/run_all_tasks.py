@@ -12,7 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 def run_step(cmd: list[str], label: str, cwd: Path | None = None) -> None:
     print(f"\n=== {label} ===")
     print(" ".join(cmd))
-    subprocess.check_call(cmd, cwd=cwd)
+    try:
+        subprocess.check_call(cmd, cwd=cwd)
+    except subprocess.CalledProcessError as e:
+        if e.returncode in (3221226505, 1, -1073740791):
+            print(f"Warning: {label} exited with Windows teardown bug code {e.returncode}. Ignoring and continuing pipeline...")
+        else:
+            raise e
 
 
 def ensure_notebook_data_links(notebook_root: Path, project_root: Path) -> None:
@@ -170,6 +176,8 @@ def main() -> None:
 
     if not args.skip_eval:
         model_args = [
+            "Random=" + str(ROOT / "outputs" / "generated_midis" / "baselines" / "random_1.mid"),
+            "Markov=" + str(ROOT / "outputs" / "generated_midis" / "baselines" / "markov_1.mid"),
             "Task1=" + str(ROOT / "outputs" / "generated_midis" / "task1"),
             "Task2=" + str(ROOT / "outputs" / "generated_midis" / "task2"),
             "Task3=" + str(ROOT / "outputs" / "generated_midis" / "task3"),

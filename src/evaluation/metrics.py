@@ -17,8 +17,8 @@ def repetition_ratio(midi_path, n=4):
     counts = {}
     for ng in ngrams:
         counts[ng] = counts.get(ng, 0) + 1
-    repeated = sum(1 for v in counts.values() if v > 1)
-    return float(repeated / max(total, 1))
+    unique_ngrams = len(counts)
+    return 1.0 - float(unique_ngrams / max(total, 1))
 
 
 def perplexity_from_avg_loss(avg_loss):
