@@ -41,7 +41,7 @@ def main():
     parser.add_argument("--checkpoint", type=str, default=str(repo_root / "models" / "saved" / "transformer.pth"))
     parser.add_argument("--out-dir", type=str, default=str(repo_root / "outputs" / "generated_midis" / "task3"))
     parser.add_argument("--num-samples", type=int, default=10)
-    parser.add_argument("--max-len", type=int, default=1024)
+    parser.add_argument("--max-len", type=int, default=4096)
     parser.add_argument("--temperature", type=float, default=1.1)
     parser.add_argument("--top-k", type=int, default=20)
     parser.add_argument("--num-velocities", type=int, default=32)
