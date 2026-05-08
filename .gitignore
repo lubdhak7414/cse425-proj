@@ -2,3 +2,4 @@ data
 .venv
 outputs
 requirements
+AUDIT_REPORT.md
