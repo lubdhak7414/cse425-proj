@@ -7,10 +7,10 @@ import numpy as np
 import torch
 from miditok import REMI, TokenizerConfig
 
-repo_root = Path(__file__).resolve().parents[1]
+repo_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(repo_root))
 
-from generation.midi_export import validate_midi
+from src.generation.midi_export import validate_midi
 from src.models.transformer import build_transformer
 
 

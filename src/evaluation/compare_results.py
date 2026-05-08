@@ -3,10 +3,10 @@ import csv
 import sys
 from pathlib import Path
 
-repo_root = Path(__file__).resolve().parents[1]
+repo_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(repo_root))
 
-from evaluation.metrics import evaluate_pair, human_listening_score
+from src.evaluation.metrics import evaluate_pair, human_listening_score
 
 
 def collect_pairs(real_dir: Path, gen_dir: Path):

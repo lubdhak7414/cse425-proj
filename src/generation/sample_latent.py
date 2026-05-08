@@ -5,10 +5,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
-repo_root = Path(__file__).resolve().parents[1]
+repo_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(repo_root))
 
-from generation.midi_export import piano_roll_to_midi, validate_midi
+from src.generation.midi_export import piano_roll_to_midi, validate_midi
 from src.models.autoencoder import LSTMAutoencoder
 from src.models.vae import LSTMVAE
 

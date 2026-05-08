@@ -5,10 +5,10 @@ from pathlib import Path
 
 import numpy as np
 
-repo_root = Path(__file__).resolve().parents[1]
+repo_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(repo_root))
 
-from generation.midi_export import write_notes_to_midi, validate_midi
+from src.generation.midi_export import write_notes_to_midi, validate_midi
 from src.preprocessing.midi_parser import list_midi_files
 import pretty_midi
 
