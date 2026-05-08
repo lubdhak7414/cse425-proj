@@ -115,10 +115,38 @@ def main() -> None:
             cwd=ROOT,
         )
         run_step(
-            [py, "-m", "src.generation.sample_latent", "--model-type", "vae"],
+            [
+                py,
+                "-m",
+                "src.generation.sample_latent",
+                "--model-type",
+                "vae",
+                "--num-samples",
+                "8",
+                "--out-dir",
+                str(ROOT / "outputs" / "generated_midis" / "task2"),
+            ],
             "Task 2 Generation",
             cwd=ROOT,
         )
+        
+        real_midis = list(Path(args.real_dir).rglob("*.midi")) + list(Path(args.real_dir).rglob("*.mid"))
+        if len(real_midis) >= 2:
+            run_step(
+                [
+                    py,
+                    "-m",
+                    "src.generation.interpolate_vae",
+                    "--midi-a",
+                    str(real_midis[0]),
+                    "--midi-b",
+                    str(real_midis[1]),
+                ],
+                "Task 2 Interpolation",
+                cwd=ROOT,
+            )
+        else:
+            print("Not enough real MIDI files found for interpolation experiment.")
 
     if not args.skip_task3:
         run_step(
