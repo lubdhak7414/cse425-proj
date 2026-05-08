@@ -1,5 +1,6 @@
 import argparse
 import math
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -8,6 +9,9 @@ import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader, Dataset
 from miditok import REMI, TokenizerConfig
+
+repo_root = Path(__file__).resolve().parents[2]
+sys.path.append(str(repo_root))
 
 from src.models.transformer import build_transformer
 
@@ -56,7 +60,7 @@ def main():
     parser.add_argument("--num-velocities", type=int, default=32)
     args = parser.parse_args()
 
-    root_dir = Path(__file__).resolve().parents[2]
+    root_dir = repo_root
     train_path, genre_path = resolve_token_paths(root_dir)
     if not train_path.exists():
         raise FileNotFoundError("Missing tokenized data. Expected data/processed/tokens/train.npy or legacy path.")

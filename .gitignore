@@ -3,3 +3,6 @@ data
 outputs
 requirements
 AUDIT_REPORT.md
+\__pycache__
+.vscode
+\saved

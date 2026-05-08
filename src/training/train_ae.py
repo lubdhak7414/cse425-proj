@@ -1,4 +1,5 @@
 import argparse
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -6,6 +7,9 @@ import numpy as np
 import torch
 from torch import nn, optim
 from torch.utils.data import DataLoader, Dataset
+
+repo_root = Path(__file__).resolve().parents[2]
+sys.path.append(str(repo_root))
 
 from src.models.autoencoder import build_autoencoder
 
@@ -53,7 +57,7 @@ def main():
     parser.add_argument("--latent-dim", type=int, default=64)
     args = parser.parse_args()
 
-    root_dir = Path(__file__).resolve().parents[2]
+    root_dir = repo_root
     train_path, val_path, pos_weight_path = resolve_roll_paths(root_dir)
     if not train_path.exists() or not val_path.exists():
         raise FileNotFoundError("Missing processed piano-roll data. Expected train/val .npy files.")
