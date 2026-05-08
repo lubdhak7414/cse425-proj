@@ -1,1 +1,4 @@
-data/\n.venv/\n*.zip
+data
+.venv
+outputs
+requirements
