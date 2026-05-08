@@ -1,3 +1,4 @@
+import torch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,3 +10,5 @@ OUTPUTS_DIR = ROOT / "outputs"
 GENERATED_DIR = OUTPUTS_DIR / "generated_midis"
 PLOTS_DIR = OUTPUTS_DIR / "plots"
 SURVEY_DIR = OUTPUTS_DIR / "survey_results"
+
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")

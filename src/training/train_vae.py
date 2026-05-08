@@ -2,6 +2,8 @@ import argparse
 import sys
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -11,6 +13,7 @@ from torch.utils.data import DataLoader, Dataset
 repo_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(repo_root))
 
+from src.config import DEVICE
 from src.models.vae import build_vae
 
 
@@ -65,10 +68,10 @@ def main():
 
     train_data = PianoRollDataset(train_path)
     val_data = PianoRollDataset(val_path)
+    device = DEVICE
+    print(f"Using device: {device}")
     train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_data, batch_size=args.batch_size, shuffle=False)
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = build_vae(
         input_dim=88,
         hidden_dim=args.hidden_dim,
@@ -121,6 +124,13 @@ def main():
     model_dir = root_dir / "models" / "saved"
     model_dir.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), model_dir / "vae.pth")
+    del model
+    del train_loader
+    del val_loader
+    import gc
+    gc.collect()
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":

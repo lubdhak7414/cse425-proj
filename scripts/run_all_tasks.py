@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +16,10 @@ def run_step(cmd: list[str], label: str, cwd: Path | None = None) -> None:
 
 
 def ensure_notebook_data_links(notebook_root: Path, project_root: Path) -> None:
+    """
+    Ensure the notebook data directories exist.
+    Tries to create symlinks, falls back to copying if symlinks fail (Windows issue).
+    """
     data_dir = notebook_root / "data"
     raw_dir = data_dir / "raw_midi"
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -26,11 +31,18 @@ def ensure_notebook_data_links(notebook_root: Path, project_root: Path) -> None:
     target_raw = raw_dir / "maestro-v3.0.0"
     target_fallback = data_dir / "maestro-v3.0.0"
 
-    if source_raw.exists() and not target_raw.exists():
-        target_raw.symlink_to(source_raw, target_is_directory=True)
+    def link_or_copy(src: Path, dst: Path):
+        if src.exists() and not dst.exists():
+            try:
+                dst.symlink_to(src, target_is_directory=True)
+                print(f"Symlinked {dst} -> {src}")
+            except (OSError, NotImplementedError) as e:
+                print(f"Symlink failed ({e}), copying instead...")
+                shutil.copytree(src, dst)
+                print(f"Copied {dst} <- {src}")
 
-    if source_fallback.exists() and not target_fallback.exists():
-        target_fallback.symlink_to(source_fallback, target_is_directory=True)
+    link_or_copy(source_raw, target_raw)
+    link_or_copy(source_fallback, target_fallback)
 
 
 def main() -> None:

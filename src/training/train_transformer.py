@@ -3,6 +3,8 @@ import math
 import sys
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -13,6 +15,7 @@ from miditok import REMI, TokenizerConfig
 repo_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(repo_root))
 
+from src.config import DEVICE
 from src.models.transformer import build_transformer
 
 
@@ -75,11 +78,11 @@ def main():
     pad_token = tokenizer["PAD_None"]
     vocab_size = tokenizer.vocab_size
 
+    device = DEVICE
+    print(f"Using device: {device}")
     dataset = TokenDataset(train_path, pad_token, seq_len=args.seq_len, genre_file=genre_path)
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
     genre_count = int(np.max(dataset.genres)) + 1 if len(dataset.genres) else 1
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = build_transformer(
         vocab_size=vocab_size,
         genre_count=genre_count,
@@ -96,15 +99,20 @@ def main():
     for epoch in range(1, args.epochs + 1):
         model.train()
         total_loss = 0.0
+        scaler = torch.amp.GradScaler('cuda', enabled=(device.type == "cuda"))
         for tokens, genres in loader:
             tokens = tokens.to(device)
             genres = genres.to(device)
             x_input, y_target = tokens[:, :-1], tokens[:, 1:]
             optimizer.zero_grad()
-            logits = model(x_input, genres)
-            loss = criterion(logits.reshape(-1, vocab_size), y_target.reshape(-1))
-            loss.backward()
-            optimizer.step()
+            
+            with torch.amp.autocast('cuda', enabled=(device.type == "cuda")):
+                logits = model(x_input, genres)
+                loss = criterion(logits.reshape(-1, vocab_size), y_target.reshape(-1))
+            
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             total_loss += loss.item()
 
         avg_loss = total_loss / len(loader)
@@ -126,6 +134,12 @@ def main():
     model_dir = root_dir / "models" / "saved"
     model_dir.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), model_dir / "transformer.pth")
+    del model
+    del loader
+    import gc
+    gc.collect()
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":
