@@ -103,7 +103,7 @@ def main() -> None:
             cwd=ROOT,
         )
         run_step(
-            [py, "-m", "generation.sample_latent", "--model-type", "ae"],
+            [py, "-m", "src.generation.sample_latent", "--model-type", "ae"],
             "Task 1 Generation",
             cwd=ROOT,
         )
@@ -115,7 +115,7 @@ def main() -> None:
             cwd=ROOT,
         )
         run_step(
-            [py, "-m", "generation.sample_latent", "--model-type", "vae"],
+            [py, "-m", "src.generation.sample_latent", "--model-type", "vae"],
             "Task 2 Generation",
             cwd=ROOT,
         )
@@ -138,7 +138,7 @@ def main() -> None:
             [
                 py,
                 "-m",
-                "evaluation.compare_results",
+                "src.evaluation.compare_results",
                 "--real-dir",
                 args.real_dir,
                 "--models",
