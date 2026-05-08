@@ -126,7 +126,7 @@ def main() -> None:
             "Task 3 Training",
             cwd=ROOT,
         )
-        run_step([py, "-m", "generation.generate_music"], "Task 3 Generation", cwd=ROOT)
+        run_step([py, "-m", "src.generation.generate_music"], "Task 3 Generation", cwd=ROOT)
 
     if not args.skip_eval:
         model_args = [

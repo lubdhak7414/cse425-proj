@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from miditok import REMI, TokenizerConfig
+from miditok import REMI, TokSequence, TokenizerConfig
 
 repo_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(repo_root))
@@ -95,11 +95,11 @@ def main():
             bos_token=bos_token,
             vocab_size=vocab_size,
         )
-        pm = tokenizer.tokens_to_midi([tokens])
-        if pm is None:
+        score = tokenizer.decode([TokSequence(ids=tokens)])
+        if score is None:
             continue
         out_path = out_dir / f"genre_{genre_id}_sample_{i + 1}.mid"
-        pm.write(str(out_path))
+        score.dump_midi(str(out_path))
         if validate_midi(str(out_path)):
             generated += 1
         else:
