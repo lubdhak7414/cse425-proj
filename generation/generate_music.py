@@ -47,8 +47,14 @@ def main():
     parser.add_argument("--num-velocities", type=int, default=32)
     args = parser.parse_args()
 
-    config = TokenizerConfig(num_velocities=args.num_velocities, use_chords=False, use_programs=False)
+    config = TokenizerConfig(
+        num_velocities=args.num_velocities,
+        use_chords=False,
+        use_programs=False,
+        one_token_stream=True,
+    )
     tokenizer = REMI(config)
+    tokenizer.one_token_stream = True
     vocab_size = tokenizer.vocab_size
 
     genre_path = repo_root / "data" / "processed" / "tokens" / "genres.npy"
@@ -89,7 +95,7 @@ def main():
             bos_token=bos_token,
             vocab_size=vocab_size,
         )
-        pm = tokenizer.tokens_to_midi(tokens)
+        pm = tokenizer.tokens_to_midi([tokens])
         if pm is None:
             continue
         out_path = out_dir / f"genre_{genre_id}_sample_{i + 1}.mid"

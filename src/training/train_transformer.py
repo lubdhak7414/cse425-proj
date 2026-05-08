@@ -65,7 +65,12 @@ def main():
     if not train_path.exists():
         raise FileNotFoundError("Missing tokenized data. Expected data/processed/tokens/train.npy or legacy path.")
 
-    config = TokenizerConfig(num_velocities=args.num_velocities, use_chords=False, use_programs=False)
+    config = TokenizerConfig(
+        num_velocities=args.num_velocities,
+        use_chords=False,
+        use_programs=False,
+        one_token_stream=True,
+    )
     tokenizer = REMI(config)
     pad_token = tokenizer["PAD_None"]
     vocab_size = tokenizer.vocab_size

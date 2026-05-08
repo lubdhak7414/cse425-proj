@@ -2,7 +2,12 @@ from miditok import REMI, TokenizerConfig
 
 
 def build_tokenizer(num_velocities=32):
-    config = TokenizerConfig(num_velocities=num_velocities, use_chords=False, use_programs=False)
+    config = TokenizerConfig(
+        num_velocities=num_velocities,
+        use_chords=False,
+        use_programs=False,
+        one_token_stream=True,
+    )
     return REMI(config)
 
 

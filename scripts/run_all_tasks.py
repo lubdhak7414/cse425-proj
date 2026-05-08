@@ -38,6 +38,11 @@ def main() -> None:
     parser.add_argument("--python", type=str, default=sys.executable)
     parser.add_argument("--with-eda", action="store_true")
     parser.add_argument("--skip-preprocess", action="store_true")
+    parser.add_argument(
+        "--smoke-preprocess",
+        action="store_true",
+        help="Use scripts/preprocess_smoke.py instead of full_preprocess.",
+    )
     parser.add_argument("--skip-task1", action="store_true")
     parser.add_argument("--skip-task2", action="store_true")
     parser.add_argument("--skip-task3", action="store_true")
@@ -68,6 +73,8 @@ def main() -> None:
         ensure_notebook_data_links(notebook_root, ROOT)
         run_step(
             [
+                py,
+                "-m",
                 "jupyter",
                 "nbconvert",
                 "--to",
@@ -81,9 +88,12 @@ def main() -> None:
         )
 
     if not args.skip_preprocess:
-        preprocess_cmd = [py, "-m", "src.preprocessing.full_preprocess"]
-        if args.with_eda:
-            preprocess_cmd.append("--eda")
+        if args.smoke_preprocess:
+            preprocess_cmd = [py, str(ROOT / "scripts" / "preprocess_smoke.py")]
+        else:
+            preprocess_cmd = [py, "-m", "src.preprocessing.full_preprocess"]
+            if args.with_eda:
+                preprocess_cmd.append("--eda")
         run_step(preprocess_cmd, "Preprocessing", cwd=ROOT)
 
     if not args.skip_task1:
