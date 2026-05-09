@@ -68,7 +68,7 @@ music-generation-unsupervised/
 pip install -r requirements.txt
 ```
 
-## 💾 Dataset Preparation
+## Dataset Preparation
 This project uses the **MAESTRO Dataset v3.0.0**.
 1. Download the MIDI-only zip from [Magenta MAESTRO](https://magenta.tensorflow.org/datasets/maestro).
 2. Extract the contents into `data/raw_midi/`.
@@ -110,7 +110,7 @@ python -m src.evaluation.compare_results --real-dir data/raw_midi/maestro-v3.0.0
              Task3=outputs/generated_midis/task3
 ```
 
-## 📊 Evaluation Metrics & Baselines
+## Evaluation Metrics & Baselines
 
 | Model | Loss | Perplexity | Rhythm Diversity | Human Score | Genre Control |
 | :--- | :--- | :--- | :--- | :--- | :--- |
