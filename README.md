@@ -1,107 +1,113 @@
 # Unsupervised Neural Network for Multi-Genre Music Generation
 
 **Course:** CSE425/EEE474 Neural Networks  
-**Submission Deadline:** 10th April, 2026  
 **Team Members:** Safwan Usaid Lubdhak, Maidul Islam Moon, Random 3rd Person  
 
-## 🎵 Project Overview
-This repository contains the implementation of a deep unsupervised model capable of generating novel music pieces. Because traditional supervised learning with labeled music is expensive, this project utilizes unsupervised generative neural networks to learn musical representations from raw MIDI data. 
+## Project Overview
+This project implements deep unsupervised models for generating music. Traditional supervised learning for music is limited by expensive labeling, so this work uses unsupervised generative networks to learn representations from raw MIDI data.
 
-The project is divided into three primary tasks:
-1. **Task 1 (Easy):** LSTM Autoencoder for single-genre generation (Piano-roll).
-2. **Task 2 (Medium):** Variational Autoencoder (VAE) for multi-genre diversity.
-3. **Task 3 (Hard):** Autoregressive Transformer for long, coherent sequence generation (Token-based).
+Tasks implemented:
+1. **Task 1:** LSTM Autoencoder for piano-roll generation.
+2. **Task 2:** Variational Autoencoder (VAE) for multi-genre diversity.
+3. **Task 3:** Autoregressive Transformer for coherent sequence generation.
 
-## 📂 Repository Structure
-The code is structured professionally as required by the project specifications:
+## Repository Structure
+The project follows the required structure:
 
 ```text
 music-generation-unsupervised/
 ├── README.md
 ├── requirements.txt
 ├── data/
-│   ├── raw_midi/               # Raw downloaded MIDI files (e.g., MAESTRO)
+│   ├── raw_midi/               # Raw MIDI files (e.g., MAESTRO)
 │   ├── processed/              # Extracted piano-rolls and tokenized sequences
-│   └── train_test_split/       # Predefined train/val/test splits
+│   └── train_test_split/       # Predefined splits
 ├── notebooks/
-│   ├── preprocessing.ipynb     # Exploratory Data Analysis (EDA) and sparsity checks
-│   └── baseline_markov.ipynb   # Markov Chain and Random baseline implementations
+│   ├── preprocessing.ipynb     # EDA and sparsity analysis
+│   └── baseline_markov.ipynb   # Markov Chain and Random baselines
 ├── src/
-│   ├── config.py               # Hyperparameters, paths, and training configurations
+│   ├── config.py               # Hyperparameters and paths
 │   ├── preprocessing/
-│   │   ├── midi_parser.py      # MIDI reading/filtering tools
-│   │   ├── tokenizer.py        # Token-based preprocessing (miditok)
-│   │   └── piano_roll.py       # Matrix-based preprocessing (pretty_midi)
+│   │   ├── full_preprocess.py  # Main preprocessing entry point
+│   │   ├── midi_parser.py      # MIDI filtering tools
+│   │   ├── tokenizer.py        # Token-based preprocessing
+│   │   └── piano_roll.py       # Matrix-based preprocessing
 │   ├── models/
-│   │   ├── autoencoder.py      # Task 1 LSTM AE architecture
-│   │   ├── vae.py              # Task 2 VAE architecture
-│   │   ├── transformer.py      # Task 3 GPT-style Transformer architecture
-│   │   └── diffusion.py        # (Optional/Extra)
+│   │   ├── autoencoder.py      # LSTM AE architecture
+│   │   ├── vae.py              # VAE architecture
+│   │   ├── transformer.py      # GPT-style Transformer architecture
+│   │   └── diffusion.py        # Experimental diffusion model
 │   ├── training/
-│   │   ├── train_ae.py         # Training loop for Task 1 (includes BCE loss)
-│   │   ├── train_vae.py        # Training loop for Task 2 (includes KL Annealing)
-│   │   └── train_transformer.py# Training loop for Task 3
+│   │   ├── train_ae.py         # AE training loop
+│   │   ├── train_vae.py        # VAE training loop
+│   │   └── train_transformer.py# Transformer training loop
 │   ├── evaluation/
-│   │   ├── metrics.py          # Master evaluation script
-│   │   ├── pitch_histogram.py  # Pitch Histogram Similarity calculation
-│   │   └── rhythm_score.py     # Rhythm Diversity Score calculation
+│   │   ├── compare_results.py  # Metrics table generation
+│   │   ├── metrics.py          # Core metric functions
+│   │   ├── pitch_histogram.py  # Pitch Histogram Similarity
+│   │   └── rhythm_score.py     # Rhythm Diversity Score
 │   └── generation/
-│       ├── sample_latent.py    # Code for sampling z ~ N(0,I) for AE/VAE
-│       ├── generate_music.py   # Autoregressive / decoder generation scripts
-│       └── midi_export.py      # Matrix/Token to .midi file conversion
+│       ├── baselines.py        # Random and Markov baselines
+│       ├── sample_latent.py    # Latent space sampling for AE/VAE
+│       ├── generate_music.py   # Transformer generation script
+│       ├── interpolate_vae.py  # VAE latent interpolation
+│       └── midi_export.py      # MIDI file conversion
 ├── outputs/
-│   ├── generated_midis/        # Final 5-15 MIDI samples for submission
-│   ├── plots/                  # Loss curves and Perplexity plots
-│   └── survey_results/         # Human listening survey datasets (RLHF)
+│   ├── generated_midis/        # Output MIDI samples
+│   └── plots/                  # Loss curves and metrics table
 └── report/
-    ├── final_report.tex        # LaTeX source for the final PDF
+    ├── final_report.tex        # LaTeX source
     ├── architecture_diagrams/  # Model diagrams
-    └── references.bib          # Citations
+    └── references.bib          # Bibliography
 ```
 
-## ⚙️ Environment Setup
-As noted in the Supplementary Implementation Guide, PyTorch must be installed first depending on your system's CUDA availability. 
-
-1. **Install PyTorch:** Visit [PyTorch Get Started](https://pytorch.org/get-started/locally/) for your specific OS/Compute platform command.
-2. **Install Remaining Dependencies:**
+## Environment Setup
+1. **Install PyTorch**: Follow instructions at [pytorch.org](https://pytorch.org/get-started/locally/) based on your hardware.
+2. **Install Dependencies**:
 ```bash
 pip install -r requirements.txt
 ```
-*(Dependencies include: `pretty_midi`, `miditok`, `numpy`, `pandas`, `matplotlib`, and optionally `music21`)*
 
 ## 💾 Dataset Preparation
-This project utilizes the **MAESTRO Dataset v3.0.0** (or optionally the Lakh/Groove MIDI datasets). 
-1. Download the MIDI-only zip file from the [Google Magenta MAESTRO page](https://magenta.tensorflow.org/datasets/maestro).
-2. Extract the `.csv` and subdirectories into `data/raw_midi/`.
-3. Run the preprocessing scripts to filter sparse windows and generate piano-rolls/tokens:
+This project uses the **MAESTRO Dataset v3.0.0**.
+1. Download the MIDI-only zip from [Magenta MAESTRO](https://magenta.tensorflow.org/datasets/maestro).
+2. Extract the contents into `data/raw_midi/`.
+3. Run the full preprocessing pipeline:
 ```bash
-python src/preprocessing/piano_roll.py  # For Tasks 1 & 2
-python src/preprocessing/tokenizer.py   # For Task 3
+python -m src.preprocessing.full_preprocess --eda
 ```
 
-## 🚀 How to Run
+## How to Run
 
-### 1. Training the Models
-To train the individual models, navigate to the root directory and execute the respective training scripts. *Ensure hyperparameters are set in `src/config.py`.*
+### 1. Training
+Execute the training scripts from the root directory. Configuration is managed in `src/config.py`.
 
 ```bash
-python src/training/train_ae.py           # Trains the LSTM Autoencoder
-python src/training/train_vae.py          # Trains the VAE with KL Annealing
-python src/training/train_transformer.py  # Trains the Autoregressive Transformer
+python -m src.training.train_ae
+python -m src.training.train_vae
+python -m src.training.train_transformer
 ```
 
-### 2. Generating Music
-To generate new MIDI compositions from the trained models:
+### 2. Music Generation
+Generate samples from the trained models:
 ```bash
-python src/generation/generate_music.py --model vae --num_samples 8
-python src/generation/generate_music.py --model transformer --num_samples 10
-```
-Generated `.mid` files will be saved in `outputs/generated_midis/`.
+# Task 1 & 2
+python -m src.generation.sample_latent --model-type ae
+python -m src.generation.sample_latent --model-type vae
 
-### 3. Evaluation & Metrics
-To calculate Pitch Histogram Similarity, Rhythm Diversity, and Repetition Ratios against the baseline models (Random Note Generator & Markov Chain):
+# Task 3
+python -m src.generation.generate_music --num-samples 10
+```
+
+### 3. Evaluation
+Generate the performance comparison table:
 ```bash
-python src/evaluation/metrics.py --evaluate_all
+python -m src.evaluation.compare_results --real-dir data/raw_midi/maestro-v3.0.0 \
+    --models Random=outputs/generated_midis/baselines/random_1.mid \
+             Markov=outputs/generated_midis/baselines/markov_1.mid \
+             Task1=outputs/generated_midis/task1 \
+             Task2=outputs/generated_midis/task2 \
+             Task3=outputs/generated_midis/task3
 ```
 
 ## 📊 Evaluation Metrics & Baselines
