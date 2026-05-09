@@ -1,12 +1,3 @@
-Based on the provided project guidelines and the required **"GitHub-Style Project Source Structure"** (Section 7, Page 12 of the main document), the assignment does not explicitly dictate the exact text that must go into the `README.md`. However, it emphasizes a **professional structure** and provides a highly specific directory layout and pipeline.
-
-A professional `README.md` for this specific academic project should act as a comprehensive guide to understanding, installing, and reproducing your work. Below is a complete, well-structured template tailored exactly to your assignment's requirements, libraries, tasks, and directory structure. 
-
-You can copy and adapt this for your final submission:
-
-***
-
-```markdown
 # Unsupervised Neural Network for Multi-Genre Music Generation
 
 **Course:** CSE425/EEE474 Neural Networks  
@@ -114,7 +105,6 @@ python src/evaluation/metrics.py --evaluate_all
 ```
 
 ## 📊 Evaluation Metrics & Baselines
-*(Include a brief placeholder or the actual markdown table of your results matching Table 3 of the prompt)*
 
 | Model | Loss | Perplexity | Rhythm Diversity | Human Score | Genre Control |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -123,4 +113,3 @@ python src/evaluation/metrics.py --evaluate_all
 | **Task 1: Autoencoder** | 0.378 | - | 0.430 | 3.2 | None |
 | **Task 2: VAE** | 3109.75 | - | 0.594 | 3.8 | Basic |
 | **Task 3: Transformer** | 1.850 | 6.36 | 0.021 | 4.1 | Moderate |
-
