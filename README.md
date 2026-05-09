@@ -131,6 +131,14 @@ python -m src.evaluation.compare_results \
              Task3=outputs/generated_midis/task3
 ```
 
+## Generated Samples
+
+Generated MIDI files for all tasks are available on Google Drive:
+
+**[Download Generated MIDI Samples](https://drive.google.com/drive/folders/1d5pZh9K8xuJrvPz7V9BkY8-RQDtFI6Qi?usp=sharing)**
+
+Includes outputs from Task 1 (AE), Task 2 (VAE), Task 3 (Transformer), and the VAE latent interpolation experiment.
+
 ## Evaluation Metrics & Baselines
 
 | Model | Loss | Perplexity | Rhythm Diversity | Human Score | Genre Control |

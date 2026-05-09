@@ -26,18 +26,18 @@ Department of Computer Science and Engineering \\
 \maketitle
 
 \begin{abstract}
-We present a systematic study of deep learning architectures for symbolic music generation using the MAESTRO dataset \citep{Hawthorne2019EnablingFP} (57 MB MIDI-only package). Starting from LSTM-based autoencoders and variational autoencoders, and culminating in a decoder-only GPT-style Transformer, we evaluate each model across reconstruction quality, generative diversity, and human listening scores. Our Transformer (Task~3) achieves the best overall balance, converging to a cross-entropy loss of 1.85 and perplexity of 6.36 after 40 epochs with moderate genre-conditioning capability. All models are compared against random and Markov-chain baselines, and results are reported in a unified metrics table covering pitch histogram overlap, rhythm diversity, repetition ratio, and human evaluation.
+We study three deep learning architectures for symbolic music generation using the MAESTRO dataset \citep{Hawthorne2019EnablingFP} (57 MB MIDI-only package): an LSTM Autoencoder, a Variational Autoencoder, and a decoder-only GPT-style Transformer. Each model is evaluated on reconstruction quality, generative diversity, and output structure. The Transformer (Task~3) achieves a final cross-entropy loss of 1.85 and perplexity of 6.36 after 40 epochs, with moderate genre-conditioning capability. Results are reported against random and Markov-chain baselines across pitch histogram overlap, rhythm diversity, and repetition ratio.
 \end{abstract}
 
 %-----------------------------------------------------------------------
 \section{Exploratory Data Analysis}
 %-----------------------------------------------------------------------
 
-We worked exclusively with the 57~MB MIDI-only package of the MAESTRO~v3.0.0 dataset \citep{Hawthorne2019EnablingFP}, which contains 1,276 piano performances with per-split metadata (train/validation/test) in a provided CSV file. We used the predefined split throughout—no custom re-splitting was performed.
+We worked exclusively with the 57~MB MIDI-only package of the MAESTRO~v3.0.0 dataset \citep{Hawthorne2019EnablingFP}, which provides 1,276 piano performances with predefined train/validation/test splits in a CSV metadata file. No custom re-splitting was performed.
 
-Figure~\ref{fig:eda} summarises our two primary EDA plots.
-The \textit{duration histogram} (Figure~\ref{fig:eda_duration}) shows that most pieces fall in the 3–7~minute range with a long right tail extending to $\sim$30~minutes, indicating the dataset contains both short études and full-length recitals.
-The \textit{pitch distribution histogram} (Figure~\ref{fig:eda_pitch}) reveals that middle-register notes (MIDI pitches 48–72, roughly C3–C5) dominate, with considerably sparser activity in the extreme bass and treble registers. This strong sparsity motivated our use of a class-weighted loss during training.
+Figure~\ref{fig:eda} shows our two primary EDA plots.
+The duration histogram (Figure~\ref{fig:eda_duration}) shows that most pieces fall in the 3--7~minute range with a long right tail extending to $\sim$30~minutes.
+The pitch distribution histogram (Figure~\ref{fig:eda_pitch}) shows that middle-register notes (MIDI pitches 48--72, roughly C3--C5) are the most active, with sparser activity in the extreme low and high registers. This sparsity motivated the use of a class-weighted loss during training.
 
 \begin{figure}[h]
 \centering
@@ -51,7 +51,7 @@ The \textit{pitch distribution histogram} (Figure~\ref{fig:eda_pitch}) reveals t
   \caption{Per-pitch note frequency across a sample of MIDI files.}
   \label{fig:eda_pitch}
 \end{subfigure}
-\caption{Exploratory Data Analysis. Piano rolls are 88-dimensional binary vectors (one per MIDI pitch) sampled at a fixed quantisation resolution.}
+\caption{Exploratory Data Analysis. Piano rolls are 88-dimensional binary vectors sampled at a fixed quantisation resolution.}
 \label{fig:eda}
 \end{figure}
 
@@ -59,29 +59,29 @@ The \textit{pitch distribution histogram} (Figure~\ref{fig:eda_pitch}) reveals t
 \section{Model Architectures and Implementation}
 %-----------------------------------------------------------------------
 
-All models operate on fixed-length piano-roll segments of shape $T \times 88$, where $T = 128$ time steps and 88 corresponds to the full MIDI pitch range. Inputs are normalised binary matrices (1 = note active, 0 = note off).
+All models take fixed-length piano-roll segments of shape $T \times 88$, where $T = 128$ time steps and 88 is the MIDI pitch range. Inputs are binary matrices (1 = note active, 0 = note off).
 
 \subsection{Baselines}
 
-\textbf{Random generator.} Notes are sampled i.i.d.\ from a Bernoulli distribution fitted to the dataset pitch frequencies.
+\textbf{Random generator.} Notes are sampled i.i.d.\ from a Bernoulli distribution fitted to dataset pitch frequencies.
 
-\textbf{Markov chain.} A first-order pitch Markov model is estimated from the training set. The transition matrix is row-normalised, and generation proceeds by ancestral sampling.
+\textbf{Markov chain.} A first-order Markov model over pitch is estimated from the training set. The row-normalised transition matrix is used for ancestral sampling.
 
-\subsection{Task 1 — LSTM Autoencoder}
+\subsection{Task 1 --- LSTM Autoencoder}
 
-The encoder is a 2-layer bidirectional LSTM \citep{Hochreiter1997LongSM} ($d_\text{hidden}{=}256$, dropout~$p{=}0.2$) that reads the full segment and projects the final hidden state through a linear layer to a latent code $z \in \mathbb{R}^{64}$.
+The encoder is a 2-layer LSTM \citep{Hochreiter1997LongSM} ($d_\text{hidden}{=}256$, dropout~$p{=}0.2$) that processes the full segment and projects the final hidden state through a linear layer to a latent code $z \in \mathbb{R}^{64}$:
 
 \[
   z = W_e \, h_T^{(L)}, \quad h_T^{(L)} \in \mathbb{R}^{256}
 \]
 
-The decoder is a symmetric 2-layer LSTM that tiles $z$ across all $T$ time steps and projects each output to an 88-dimensional logit vector:
+The decoder is a symmetric 2-layer LSTM that repeats $z$ across all $T$ steps and projects each output to 88-dimensional logits:
 
 \[
   \hat{x}_t = W_d \, h_t^{\text{dec}}, \quad t = 1,\ldots,T
 \]
 
-Because piano rolls are extremely sparse (fewer than 5\% of cells are active), binary cross-entropy without reweighting collapses to predicting all zeros. We therefore use \texttt{BCEWithLogitsLoss} with a learned positive-class weight $w^+$ read from a per-dataset \texttt{pos\_weight.txt} file (default $w^+ = 20$):
+Piano rolls are sparse (under 5\% of cells active), so plain BCE collapses to predicting all zeros. We use \texttt{BCEWithLogitsLoss} with a positive-class weight $w^+$ loaded from \texttt{pos\_weight.txt} (default $w^+ = 20$):
 
 \[
   \mathcal{L}_{\text{AE}} = -\frac{1}{T{\cdot}88}\sum_{t,p}\Bigl[w^+ x_{t,p}\log\sigma(\hat{x}_{t,p}) + (1-x_{t,p})\log(1-\sigma(\hat{x}_{t,p}))\Bigr]
@@ -89,15 +89,15 @@ Because piano rolls are extremely sparse (fewer than 5\% of cells are active), b
 
 Training used Adam \citep{Kingma2014AdamAM} ($\eta=10^{-3}$, batch size~32) for 40 epochs with gradient clipping at 1.0.
 
-\subsection{Task 2 — Variational Autoencoder \citep{Kingma2013AutoEncodingVB}}
+\subsection{Task 2 --- Variational Autoencoder \citep{Kingma2013AutoEncodingVB}}
 
-The VAE shares the same encoder/decoder topology as Task~1 but replaces the deterministic bottleneck with a stochastic one. Two parallel linear heads project the encoder hidden state to a mean vector $\mu$ and a log-variance vector $\log\sigma^2$, both in $\mathbb{R}^{64}$:
+The VAE uses the same encoder/decoder as Task~1 but replaces the deterministic bottleneck with a stochastic one. Two linear heads map the encoder hidden state to a mean $\mu$ and log-variance $\log\sigma^2$, both in $\mathbb{R}^{64}$:
 
 \[
   \mu = W_\mu h_T^{(L)}, \qquad \log\sigma^2 = W_\sigma h_T^{(L)}
 \]
 
-A sample is drawn via the reparameterisation trick:
+A latent sample is drawn via the reparameterisation trick:
 
 \[
   z = \mu + \varepsilon \odot \sigma, \quad \varepsilon \sim \mathcal{N}(0, I)
@@ -109,21 +109,21 @@ The training objective is the negative ELBO:
   \mathcal{L}_{\text{VAE}} = \underbrace{\mathcal{L}_{\text{recon}}}_{\text{BCE sum}} + \beta \underbrace{D_{\mathrm{KL}}\!\left(\mathcal{N}(\mu,\sigma^2)\,\|\,\mathcal{N}(0,I)\right)}_{\displaystyle -\frac{1}{2}\sum_j(1+\log\sigma^2_j - \mu_j^2 - \sigma^2_j)}
 \]
 
-To prevent posterior collapse, we applied \textbf{KL annealing} \citep{Bowman2015GeneratingSF}: $\beta$ increases linearly from 0 to 1 over the first 10 epochs (warmup), then remains at $\beta{=}1$. This gives the reconstruction loss time to find a useful solution before the regularisation term fully activates.
+To prevent posterior collapse, we used KL annealing \citep{Bowman2015GeneratingSF}: $\beta$ increases linearly from 0 to 1 over the first 10 epochs, then stays at $\beta{=}1$.
 
-\subsection{Task 3 — GPT-style Transformer}
+\subsection{Task 3 --- GPT-style Transformer}
 
-For Task~3 we implemented \texttt{GPTMusic}, a decoder-only Transformer \citep{Vaswani2017AttentionIA, Huang2018MusicTG} trained autoregressively on tokenised pitch sequences. The architecture comprises:
+We implemented \texttt{GPTMusic}, a decoder-only Transformer \citep{Vaswani2017AttentionIA, Huang2018MusicTG} trained autoregressively on tokenised pitch sequences. Architecture details:
 
 \begin{itemize}
-  \item \textbf{Token embedding}: $E_\text{tok} \in \mathbb{R}^{V \times 256}$, where $V$ is the vocabulary size (quantised pitch+velocity tokens).
+  \item \textbf{Token embedding}: $E_\text{tok} \in \mathbb{R}^{V \times 256}$, where $V$ is the vocabulary size.
   \item \textbf{Positional embedding}: learned $E_\text{pos} \in \mathbb{R}^{1024 \times 256}$.
-  \item \textbf{Genre embedding}: a learnable $E_\text{genre} \in \mathbb{R}^{G \times 256}$ broadcast-added to every position, allowing soft genre conditioning at inference time.
-  \item \textbf{Causal self-attention}: 4 layers, 8 heads, FFN width $4{\times}256{=}1024$, causal mask enforced via \texttt{generate\_square\_subsequent\_mask}.
+  \item \textbf{Genre embedding}: learnable $E_\text{genre} \in \mathbb{R}^{G \times 256}$, broadcast-added to every position for genre conditioning.
+  \item \textbf{Transformer}: 4 decoder layers, 8 heads, FFN width 1024, causal mask via \texttt{generate\_square\_subsequent\_mask}.
   \item \textbf{Output projection}: linear to vocabulary logits.
 \end{itemize}
 
-The causal mask ensures $\Pr(x_t \mid x_{<t}, g)$ for genre label $g$, so the model never attends to future tokens during training. Cross-entropy loss is used:
+The model is trained to minimise:
 
 \[
   \mathcal{L}_{\text{Trans}} = -\frac{1}{T}\sum_{t=1}^{T} \log \Pr(x_t \mid x_{<t}, g)
@@ -133,40 +133,38 @@ The causal mask ensures $\Pr(x_t \mid x_{<t}, g)$ for genre label $g$, so the mo
 \section{Training Results and Loss Curves}
 %-----------------------------------------------------------------------
 
-All models were trained on the MAESTRO predefined training split using CUDA acceleration. Final loss values are reported at epoch~40. Plots use a \textbf{solid line for training} and a \textbf{dashed line for validation}.
+All models were trained on the predefined MAESTRO training split using CUDA. Reported values are at epoch~40. Loss curves use a solid line for training and a dashed line for validation.
 
-\subsection{Task 1 — Autoencoder Loss Curve}
+\subsection{Task 1 --- Autoencoder Loss}
 
-Figure~\ref{fig:task1_loss} shows the weighted BCE loss for the LSTM Autoencoder. Training began at 1.087 (epoch~1) and converged smoothly to \textbf{0.378} by epoch~40. Validation tracked closely, ending at 0.431, indicating modest overfitting in later epochs with no divergence.
+Figure~\ref{fig:task1_loss} shows the weighted BCE loss. Training loss started at 1.087 (epoch~1) and reached 0.378 at epoch~40. Validation loss ended at 0.431.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.60\textwidth]{architecture_diagrams/task1_loss.pdf}
-\caption{Task~1 LSTM Autoencoder: training (solid) vs.\ validation (dashed) weighted BCE loss over 40 epochs. Initial loss: Train~1.087 / Val~1.064; Final loss: Train~0.378 / Val~0.431.}
+\caption{Task~1: training (solid) vs.\ validation (dashed) BCE loss over 40 epochs.}
 \label{fig:task1_loss}
 \end{figure}
 
-\subsection{Task 2 — VAE KL Annealing Curves}
+\subsection{Task 2 --- VAE Loss Components}
 
-Figure~\ref{fig:task2_loss} shows the two loss components tracked separately throughout training.
-Reconstruction loss fell from 11,258 to \textbf{3,110} over 40 epochs.
-KL divergence rose from 66.8 (epoch~1, $\beta{=}0.1$) to a plateau of \textbf{189.0} once $\beta{=}1.0$ was reached at epoch~10, demonstrating that KL annealing successfully prevented posterior collapse while allowing the reconstruction quality to improve simultaneously.
+Figure~\ref{fig:task2_loss} shows reconstruction and KL loss separately. Reconstruction loss decreased from 11,258 to 3,110 over 40 epochs. KL divergence rose from 66.8 at epoch~1 ($\beta{=}0.1$) to 189.0 once $\beta{=}1.0$ at epoch~10, then plateaued.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.60\textwidth]{architecture_diagrams/task2_vae_losses.pdf}
-\caption{Task~2 VAE: reconstruction loss (blue) and KL divergence (orange) plotted separately over 40 epochs. KL warmup spans epochs~1–10 ($\beta$: 0.1$\to$1.0); thereafter both losses stabilise.}
+\caption{Task~2 VAE: reconstruction loss and KL divergence over 40 epochs. KL warmup: epochs~1--10 ($\beta$: 0.1$\to$1.0).}
 \label{fig:task2_loss}
 \end{figure}
 
-\subsection{Task 3 — Transformer Perplexity}
+\subsection{Task 3 --- Transformer Perplexity}
 
-Figure~\ref{fig:task3_ppl} shows the perplexity ($= e^{\mathcal{L}}$) over training. Perplexity opened at \textbf{49.30} (epoch~1) and decreased monotonically to \textbf{6.36} by epoch~40, showing consistent improvement with no signs of overfitting to the training distribution.
+Figure~\ref{fig:task3_ppl} shows perplexity ($= e^{\mathcal{L}}$) over training. It started at 49.30 (epoch~1) and decreased to 6.36 at epoch~40.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.60\textwidth]{architecture_diagrams/task3_perplexity.pdf}
-\caption{Task~3 Transformer perplexity ($e^{\mathcal{L}_{\text{CE}}}$) over 40 epochs. Epoch~1: 49.30; Epoch~2: 23.22; Epoch~40: 6.36.}
+\caption{Task~3 Transformer perplexity over 40 epochs. Epoch~1: 49.30; Epoch~2: 23.22; Epoch~40: 6.36.}
 \label{fig:task3_ppl}
 \end{figure}
 
@@ -174,86 +172,81 @@ Figure~\ref{fig:task3_ppl} shows the perplexity ($= e^{\mathcal{L}}$) over train
 \section{Results and Quantitative Evaluation}
 %-----------------------------------------------------------------------
 
-\subsection{Task 1 vs.\ Task 2 Comparison}
+\subsection{Task 1 vs.\ Task 2}
 
-Table~\ref{tab:t1vt2} directly compares the LSTM Autoencoder and the VAE on the metrics reported in our evaluation pipeline.
+Table~\ref{tab:t1vt2} compares the LSTM Autoencoder and the VAE on computed metrics.
 
 \begin{table}[h]
 \centering
-\caption{Task~1 vs.\ Task~2 side-by-side metric comparison.}
+\caption{Task~1 vs.\ Task~2 metric comparison.}
 \label{tab:t1vt2}
 \begin{tabular}{lcccc}
 \toprule
-\textbf{Model} & \textbf{Final Loss} & \textbf{Rhythm Diversity} & \textbf{Repetition Ratio} & \textbf{Human Score} \\
+\textbf{Model} & \textbf{Final Loss} & \textbf{Rhythm Diversity} & \textbf{Repetition Ratio} \\
 \midrule
-Task 1: LSTM AE & 0.378 (BCE) & 0.430 & 0.069 & 3.2 / 5 \\
-Task 2: LSTM VAE & 3109.75 (Recon) & 0.594 & 0.000 & 3.8 / 5 \\
+Task 1: LSTM AE  & 0.378 (BCE)   & 0.430 & 0.069 \\
+Task 2: LSTM VAE & 3109.75 (Recon) & 0.594 & 0.000 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The VAE achieves a notably higher rhythm diversity (0.594 vs.\ 0.430) and zero repetition ratio, confirming that the regularised latent space promotes more varied generation. Human raters also preferred VAE outputs (3.8 vs.\ 3.2), rating them as more expressive and less mechanical.
+The VAE produces higher rhythm diversity (0.594 vs.\ 0.430) and zero repetition ratio, consistent with the regularised latent space producing more varied outputs.
 
 \subsection{Master Performance Comparison}
 
-Table~\ref{tab:master} is the full comparison across all models, corresponding to the Table~3 format in the project specification.
+Table~\ref{tab:master} shows the full comparison across all models.
 
 \begin{table}[h]
 \centering
-\caption{Master performance comparison across all models. Pitch Hist.\ is the $\ell_1$ overlap distance between generated and real pitch histograms (higher = closer to real). Rhythm Diversity is computed as note inter-onset interval entropy. Human Score is on a 1–5 scale (10 participants).}
+\caption{Performance comparison. Rhythm Diversity is note inter-onset interval entropy. Repetition Ratio is the fraction of repeated n-gram pitch sequences.}
 \label{tab:master}
 \setlength{\tabcolsep}{5pt}
 \begin{tabular}{lccccc}
 \toprule
-\textbf{Model} & \textbf{Loss} & \textbf{Perplexity} & \textbf{Rhythm Diversity} & \textbf{Human Score} & \textbf{Genre Control} \\
+\textbf{Model} & \textbf{Loss} & \textbf{Perplexity} & \textbf{Rhythm Diversity} & \textbf{Repetition Ratio} & \textbf{Genre Control} \\
 \midrule
-Random Generator        & —     & —      & 0.020 & 1.0 / 5 & None \\
-Markov Chain            & —     & —      & 0.130 & 2.5 / 5 & None \\
-Task 1: Autoencoder     & 0.378 & —      & 0.430 & 3.2 / 5 & None \\
-Task 2: VAE             & 3109.75 & —    & 0.594 & 3.8 / 5 & Basic \\
-Task 3: Transformer     & 1.850 & 6.36   & 0.021 & 4.1 / 5 & Moderate \\
+Random Generator    & ---     & ---    & 0.020 & 0.000 & None \\
+Markov Chain        & ---     & ---    & 0.130 & 0.000 & None \\
+Task 1: Autoencoder & 0.378   & ---    & 0.430 & 0.069 & None \\
+Task 2: VAE         & 3109.75 & ---    & 0.594 & 0.000 & Basic \\
+Task 3: Transformer & 1.850   & 6.36   & 0.021 & 0.103 & Moderate \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textit{Notes on rhythm diversity}: the Transformer's low rhythm diversity score (0.021) arises because the evaluation metric measures note inter-onset interval entropy computed over the raw piano-roll representation; the Transformer generates sparser, more structured outputs with longer sustained notes that score lower on this particular entropy measure. Human raters consistently scored Transformer outputs highest for musical coherence.
+The Transformer's low rhythm diversity (0.021) reflects the evaluation metric's design: it measures note inter-onset interval entropy over the raw piano-roll, which scores sparser outputs lower regardless of musical structure.
 
 %-----------------------------------------------------------------------
-\section{Discussion and Qualitative Evaluation}
+\section{Discussion}
 %-----------------------------------------------------------------------
 
-\subsection{Musical Quality}
+\subsection{Output Quality}
 
-\textbf{Coherence.}
-The LSTM Autoencoder produced reconstructions that were faithful to the input but generated generic, somewhat repetitive outputs when sampling from random latent codes. The VAE showed greater harmonic variety. The Transformer exhibited the highest coherence: generated pieces maintained key signatures and rhythmic motifs over 20–30 second segments, which human listeners noted as the most ``musical'' quality.
+\textbf{Reconstruction.}
+The LSTM Autoencoder reconstructed training examples accurately but produced repetitive outputs when sampling from random latent codes. The VAE generated more varied pitch sequences due to the continuous, regularised latent space.
 
-\textbf{Absence of noise.}
-All three models produced clean binary piano-roll outputs without spurious note activations, because the final sigmoid threshold was tuned at 0.5 after training. Random generation predictably produced noise-like sequences with near-uniform note density.
+\textbf{Repetition.}
+Repetition ratios are 0.069 (Task~1), 0.000 (Task~2), and 0.103 (Task~3). The Transformer occasionally repeated harmonic patterns over long sequences, though at the bar level it avoided the exact copy loops seen in AE samples.
 
-\textbf{Absence of repetition loops.}
-The Transformer's causal attention mechanism naturally discourages exact looping. The repetition ratio (fraction of identical consecutive bars) was 0.103 for Task~3 vs.\ 0.069 for Task~1 and 0.000 for Task~2. Qualitative listening confirmed the Transformer's outputs, though occasionally repetitive in harmonic content, avoided the mechanical bar-level loops observed in Autoencoder samples.
+\textbf{Note density.}
+All three models produced clean outputs. The sigmoid output threshold was set at 0.5 post-training. The random baseline produces near-uniform note density, while trained models generate sparser, more structured piano rolls.
 
-\subsection{Latent Interpolation \citep{Roberts2018AHV}}
+\subsection{Latent Interpolation (Task 2) \citep{Roberts2018AHV}}
 
-We generated three interpolated MIDI files between two real MAESTRO pieces by computing
+Three interpolated MIDI files were generated between two MAESTRO pieces using:
 
 \[
   z_\alpha = (1-\alpha)\,\mu_1 + \alpha\,\mu_2, \quad \alpha \in \{0.25,\, 0.50,\, 0.75\}
 \]
 
-using the posterior means $\mu_1, \mu_2$ inferred by the VAE encoder. The intermediate outputs ($\alpha{=}0.25$, $0.5$) produced musically plausible sequences that blended rhythmic and pitch characteristics from both source pieces. At $\alpha{=}0.5$ the generated piece exhibited a density intermediate between the dense source and the sparser source, confirming a smooth, semantically meaningful latent manifold.
+where $\mu_1, \mu_2$ are the posterior means from the VAE encoder. The intermediate outputs blend pitch density and rhythmic patterns from both source pieces, consistent with a continuous latent space.
 
-\subsection{Human Evaluation Survey}
+\subsection{Generated Samples}
 
-We conducted a blind listening survey with 10 participants, each rating a 10-second excerpt from each model on five criteria: \textit{coherence}, \textit{creativity}, \textit{absence of noise}, \textit{absence of repetition}, and \textit{overall enjoyment} (1–5 scale each). Mean overall scores are reported in Table~\ref{tab:master}. Participants noted:
-
-\begin{itemize}
-  \item \textbf{Random} (1.0): ``Sounds like a cat on the keyboard.''
-  \item \textbf{Markov} (2.5): ``Has some melodic shape but quickly breaks down.''
-  \item \textbf{Task 1 AE} (3.2): ``Musical but slightly robotic; similar phrases repeat.''
-  \item \textbf{Task 2 VAE} (3.8): ``Noticeably more expressive; varied dynamics.''
-  \item \textbf{Task 3 Transformer} (4.1): ``Most natural; sounds like it has a plan.''
-\end{itemize}
+Generated MIDI files for all tasks are available at:
+\begin{center}
+\url{https://drive.google.com/drive/folders/1d5pZh9K8xuJrvPz7V9BkY8-RQDtFI6Qi?usp=sharing}
+\end{center}
 
 \bibliography{references}
 \bibliographystyle{iclr2025_conference}
