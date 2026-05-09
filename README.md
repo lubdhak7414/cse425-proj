@@ -1,7 +1,7 @@
 # Unsupervised Neural Network for Multi-Genre Music Generation
 
 **Course:** CSE425/EEE474 Neural Networks  
-**Team Members:** Safwan Usaid Lubdhak, Maidul Islam Moon, Random 3rd Person  
+**Team Members:** Safwan Usaid Lubdhak, Maidul Islam Moon, Sajid Bin Kawsar  
 
 ## Project Overview
 
