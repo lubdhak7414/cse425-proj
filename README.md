@@ -4,7 +4,8 @@
 **Team Members:** Safwan Usaid Lubdhak, Maidul Islam Moon, Random 3rd Person  
 
 ## Project Overview
-This project implements deep unsupervised models for generating music. Traditional supervised learning for music is limited by expensive labeling, so this work uses unsupervised generative networks to learn representations from raw MIDI data.
+
+This project implements deep unsupervised models for generating music from raw MIDI data.
 
 Tasks implemented:
 1. **Task 1:** LSTM Autoencoder for piano-roll generation.
@@ -12,15 +13,17 @@ Tasks implemented:
 3. **Task 3:** Autoregressive Transformer for coherent sequence generation.
 
 ## Repository Structure
-The project follows the required structure:
 
 ```text
-music-generation-unsupervised/
+cse425-proj/
 ├── README.md
 ├── requirements.txt
+├── download_maestro.py         # Downloads and extracts MAESTRO v3.0.0
+├── scripts/
+│   └── run_all_tasks.py        # End-to-end pipeline runner (Tasks 1–3)
 ├── data/
-│   ├── raw_midi/               # Raw MIDI files (e.g., MAESTRO)
-│   ├── processed/              # Extracted piano-rolls and tokenized sequences
+│   ├── raw_midi/               # Raw MIDI files (populated by download_maestro.py)
+│   ├── processed/              # Piano-rolls and tokenized sequences
 │   └── train_test_split/       # Predefined splits
 ├── notebooks/
 │   ├── preprocessing.ipynb     # EDA and sparsity analysis
@@ -35,74 +38,92 @@ music-generation-unsupervised/
 │   ├── models/
 │   │   ├── autoencoder.py      # LSTM AE architecture
 │   │   ├── vae.py              # VAE architecture
-│   │   ├── transformer.py      # GPT-style Transformer architecture
-│   │   └── diffusion.py        # Experimental diffusion model
+│   │   └── transformer.py      # GPT-style Transformer architecture
 │   ├── training/
 │   │   ├── train_ae.py         # AE training loop
-│   │   ├── train_vae.py        # VAE training loop
+│   │   ├── train_vae.py        # VAE training loop with KL annealing
 │   │   └── train_transformer.py# Transformer training loop
 │   ├── evaluation/
 │   │   ├── compare_results.py  # Metrics table generation
 │   │   ├── metrics.py          # Core metric functions
-│   │   ├── pitch_histogram.py  # Pitch Histogram Similarity
-│   │   └── rhythm_score.py     # Rhythm Diversity Score
+│   │   ├── pitch_histogram.py  # Pitch histogram similarity
+│   │   └── rhythm_score.py     # Rhythm diversity score
 │   └── generation/
 │       ├── baselines.py        # Random and Markov baselines
 │       ├── sample_latent.py    # Latent space sampling for AE/VAE
-│       ├── generate_music.py   # Transformer generation script
+│       ├── generate_music.py   # Transformer generation
 │       ├── interpolate_vae.py  # VAE latent interpolation
-│       └── midi_export.py      # MIDI file conversion
+│       └── midi_export.py      # MIDI file export
 ├── outputs/
 │   ├── generated_midis/        # Output MIDI samples
 │   └── plots/                  # Loss curves and metrics table
 └── report/
     ├── final_report.tex        # LaTeX source
-    ├── architecture_diagrams/  # Model diagrams
+    ├── architecture_diagrams/  # Model diagrams and plots
     └── references.bib          # Bibliography
 ```
 
 ## Environment Setup
-1. **Install PyTorch**: Follow instructions at [pytorch.org](https://pytorch.org/get-started/locally/) based on your hardware.
-2. **Install Dependencies**:
+
+1. **Install PyTorch**: Follow instructions at [pytorch.org](https://pytorch.org/get-started/locally/) for your hardware.
+2. **Install remaining dependencies**:
 ```bash
 pip install -r requirements.txt
 ```
 
 ## Dataset Preparation
-This project uses the **MAESTRO Dataset v3.0.0**.
-1. Download the MIDI-only zip from [Magenta MAESTRO](https://magenta.tensorflow.org/datasets/maestro).
-2. Extract the contents into `data/raw_midi/`.
-3. Run the full preprocessing pipeline:
+
+Run the download script to fetch and extract MAESTRO v3.0.0 into `data/raw_midi/` automatically:
+```bash
+python download_maestro.py
+```
+
+Then run the full preprocessing pipeline to generate piano-rolls and token sequences:
 ```bash
 python -m src.preprocessing.full_preprocess --eda
 ```
 
 ## How to Run
 
-### 1. Training
-Execute the training scripts from the root directory. Configuration is managed in `src/config.py`.
+### Full Pipeline (recommended)
 
+The `run_all_tasks.py` script runs the full pipeline from download to evaluation:
 ```bash
-python -m src.training.train_ae
-python -m src.training.train_vae
-python -m src.training.train_transformer
+python scripts/run_all_tasks.py --epochs 40
 ```
 
-### 2. Music Generation
-Generate samples from the trained models:
-```bash
-# Task 1 & 2
-python -m src.generation.sample_latent --model-type ae
-python -m src.generation.sample_latent --model-type vae
+Available flags:
+- `--skip-download` — skip the MAESTRO download step
+- `--skip-preprocess` — skip preprocessing
+- `--skip-task1 / --skip-task2 / --skip-task3` — skip individual tasks
+- `--skip-eval` — skip metrics table generation
+- `--epochs N` — set number of training epochs (default: 1)
 
-# Task 3
+### Step-by-Step
+
+**Training:**
+```bash
+python -m src.training.train_ae --epochs 40
+python -m src.training.train_vae --epochs 40
+python -m src.training.train_transformer --epochs 40
+```
+
+**Generation:**
+```bash
+python -m src.generation.sample_latent --model-type ae
+python -m src.generation.sample_latent --model-type vae --num-samples 8
 python -m src.generation.generate_music --num-samples 10
 ```
 
-### 3. Evaluation
-Generate the performance comparison table:
+**VAE Latent Interpolation:**
 ```bash
-python -m src.evaluation.compare_results --real-dir data/raw_midi/maestro-v3.0.0 \
+python -m src.generation.interpolate_vae --midi-a <path_a.mid> --midi-b <path_b.mid>
+```
+
+**Evaluation:**
+```bash
+python -m src.evaluation.compare_results \
+    --real-dir data/raw_midi/maestro-v3.0.0 \
     --models Random=outputs/generated_midis/baselines/random_1.mid \
              Markov=outputs/generated_midis/baselines/markov_1.mid \
              Task1=outputs/generated_midis/task1 \
