@@ -1,3 +1,4 @@
+# This file has been worked on by Safwan Usaid Lubdhak
 from pathlib import Path
 import pretty_midi
 
